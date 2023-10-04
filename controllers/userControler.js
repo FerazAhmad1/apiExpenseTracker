@@ -23,3 +23,30 @@ exports.createUser = async (req, res, next) => {
     return;
   }
 };
+
+exports.loginHandler = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({
+      where: {
+        email,
+      },
+    });
+    const correctPassword = await bcrypt.compare(
+      password,
+      user.dataValues.password
+    );
+    console.log(correctPassword);
+    if (correctPassword) {
+      res.status(200).json({
+        status: "success",
+        token: "token",
+      });
+      return;
+    }
+    res.status(403).json({
+      status: "fail",
+      token: "",
+    });
+  } catch (error) {}
+};
