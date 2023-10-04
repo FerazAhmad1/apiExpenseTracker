@@ -4,5 +4,5 @@ exports.fetchAlluser = async (req, res, next) => {
   console.log(allUsers);
 };
 exports.createUser = async (req, res, next) => {
-  console.log("yes");
+  const { name, email, password } = req.body;
 };
