@@ -32,6 +32,14 @@ exports.loginHandler = async (req, res, next) => {
         email,
       },
     });
+    console.log(user);
+    if (!user) {
+      res.status(404).json({
+        status: "fail",
+        message: "user not found",
+      });
+      return;
+    }
     const correctPassword = await bcrypt.compare(
       password,
       user.dataValues.password
@@ -48,5 +56,7 @@ exports.loginHandler = async (req, res, next) => {
       status: "fail",
       token: "",
     });
-  } catch (error) {}
+  } catch (error) {
+    throw error;
+  }
 };
