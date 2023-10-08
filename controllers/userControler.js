@@ -1,5 +1,14 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
+const signInToken = (id, email) => {
+  const token = jwt.sign({ id, email }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+  console.log(token);
+  return token;
+};
 exports.fetchAlluser = async (req, res, next) => {
   const allUsers = await User.findAll();
   console.log(allUsers);
@@ -16,10 +25,11 @@ exports.createUser = async (req, res, next) => {
     });
     return;
   } catch (error) {
-    res.status(400).json({
-      status: "Fail",
-      message: "Duplicate Entry",
-    });
+    console.log(error);
+    // res.status(400).json({
+    //   status: "Fail",
+    //   message: "Duplicate Entry",
+    // });
     return;
   }
 };
@@ -46,9 +56,19 @@ exports.loginHandler = async (req, res, next) => {
     );
     console.log(correctPassword);
     if (correctPassword) {
+      const token = signInToken(user.dataValues.id, user.dataValues.email);
+      const cookieOption = {
+        expires: new Date(
+          Date.now() + process.env.JWT_COOKIE_EXPIRE_IN * 24 * 60 * 60 * 1000
+        ),
+        httpOnly: true,
+      };
+      if (process.env.Node_env === "production") cookieOption.secure = true;
+      res.cookie("jwt", token, cookieOption);
+
       res.status(200).json({
         status: "success",
-        token: "token",
+        token,
       });
       return;
     }
