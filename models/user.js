@@ -22,6 +22,9 @@ const User = sequelize.define("user", {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  changePasswordAt: {
+    type: DataTypes.DATEONLY,
+  },
 });
 
 User.addHook("beforeSave", "hashpassword", async function (user, option) {
