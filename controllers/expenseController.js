@@ -38,7 +38,7 @@ exports.updateExpense = async (req, res, next) => {
   const { amount, category, description } = req.body;
   const response = await Expense.update(
     { amount, category, description },
-    { where: { id } }
+    { where: { id, userId: req.user.id } }
   );
   res.status(200).json({
     response,
@@ -48,7 +48,9 @@ exports.updateExpense = async (req, res, next) => {
 
 exports.deleteExpense = async (req, res, next) => {
   const id = req.params.id;
-  const response = await Expense.destroy({ where: { id } });
+  const response = await req.user.destroy({
+    where: { id, userId: req.user.id },
+  });
   res.status(200).json({
     status: "success",
   });

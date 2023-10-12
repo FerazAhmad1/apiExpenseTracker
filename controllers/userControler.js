@@ -1,5 +1,7 @@
 const User = require("../models/user");
+const razorpay = require("../utils/razorpay");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
 const signInToken = (id, email) => {
@@ -17,7 +19,7 @@ exports.createUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    const user = await req.user.createExpense({ name, email, password });
+    const user = await User.create({ name, email, password });
     const data = user.dataValues;
     res.status(201).json({
       status: "success",
@@ -34,6 +36,34 @@ exports.createUser = async (req, res, next) => {
   }
 };
 
+const provideRandomBytes = () => {
+  const randomBytes = crypto.randomBytes(32).toString("hex");
+  const encryptedCode = crypto
+    .createHash("sha256")
+    .update(randomBytes)
+    .digest("hex");
+  return encryptedCode;
+};
+exports.forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const response = await User.findOne({ where: { email } });
+    if (response) {
+      res.status(401).json({
+        status: "Fail",
+        message: "Email does not match",
+      });
+    }
+    const resetcode = provideRandomBytes();
+    const resetcodeexpire = Date.now() + 10 * 60 * 1000;
+    const updateUser = await User.update(
+      { resetcode, resetcodeexpire },
+      { where: { email } }
+    );
+  } catch (error) {
+    console.log(error, "ggggggggg");
+  }
+};
 exports.loginHandler = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -138,5 +168,22 @@ exports.protector = async (req, res, next) => {
       ...error,
     });
     return;
+  }
+};
+
+exports.createorder = async (req, res, next) => {
+  try {
+    const order = await razorpay.orders.create({
+      amount: 100,
+      currency: "INR",
+    });
+    res.status(200).json({
+      data: order,
+    });
+  } catch (error) {
+    res.status(401).json({
+      status: "Fail",
+      error,
+    });
   }
 };
