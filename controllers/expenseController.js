@@ -1,6 +1,7 @@
-const { where } = require("sequelize");
+const { where, Sequelize } = require("sequelize");
 const Expense = require("../models/expense");
-
+const sequelize = require("../utils/database");
+const User = require("../models/user");
 exports.fetchExpenses = async (req, res, next) => {
   try {
     const expenses = await req.user.getExpenses();
@@ -55,4 +56,25 @@ exports.deleteExpense = async (req, res, next) => {
     status: "success",
   });
   return;
+};
+
+exports.fetchallExpense = async (req, res, next) => {
+  const leaderBoardsData = await User.findAll({
+    attributes: [
+      "id",
+      "name",
+      [sequelize.fn("SUM", sequelize.col("expenses.amount")), "TotalAmount"],
+    ],
+    include: {
+      model: Expense,
+      required: true,
+      attributes: [],
+    },
+    group: ["User.id"],
+    order: [[sequelize.literal("TotalAmount"), "DESC"]],
+  });
+  console.log(leaderBoardsData);
+  res.status(200).json({
+    data: leaderBoardsData,
+  });
 };
