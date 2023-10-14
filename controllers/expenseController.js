@@ -15,28 +15,37 @@ exports.fetchExpenses = async (req, res, next) => {
   }
 };
 exports.createExpense = async (req, res, next) => {
+  const t = await sequelize.transaction();
   try {
-    console.log(req.user);
+    const prvTotalAmount = req.user.dataValues.totalamount;
+    const id = req.user.dataValues.id;
     const { amount, description, category } = req.body;
-    const expense = await req.user.createExpense({
-      amount,
-      description,
-      category,
-    });
-    const data = expense.dataValues;
-    res.status(200).json({
-      status: "success",
-      data,
-    });
-    return;
+    const totalamount = amount * 1 + prvTotalAmount;
+    console.log(totalamount);
+
+    const expense = await req.user.createExpense(
+      {
+        amount,
+        description,
+        category,
+      },
+      { transaction: t }
+    );
+    console.log(expense);
+    req.user.totalamount = totalamount;
+    await req.user.save({ transaction: t });
+    t.commit();
+    res.status(200).json({ status: "success", data: expense.dataValues });
   } catch (error) {
     console.log(error);
+    t.rollback();
   }
 };
 
 exports.updateExpense = async (req, res, next) => {
   const id = req.params.id;
   const { amount, category, description } = req.body;
+
   const response = await Expense.update(
     { amount, category, description },
     { where: { id, userId: req.user.id } }
@@ -49,8 +58,11 @@ exports.updateExpense = async (req, res, next) => {
 
 exports.deleteExpense = async (req, res, next) => {
   const id = req.params.id;
-  const response = await req.user.destroy({
-    where: { id, userId: req.user.id },
+  const response = await Expense.destroy({
+    where: {
+      id,
+      userId: req.user.id,
+    },
   });
   res.status(200).json({
     status: "success",
@@ -60,21 +72,11 @@ exports.deleteExpense = async (req, res, next) => {
 
 exports.fetchallExpense = async (req, res, next) => {
   const leaderBoardsData = await User.findAll({
-    attributes: [
-      "id",
-      "name",
-      [sequelize.fn("SUM", sequelize.col("expenses.amount")), "TotalAmount"],
-    ],
-    include: {
-      model: Expense,
-      required: true,
-      attributes: [],
-    },
-    group: ["User.id"],
-    order: [[sequelize.literal("TotalAmount"), "DESC"]],
+    attributes: ["id", "name", "totalamount"],
   });
-  console.log(leaderBoardsData);
+
   res.status(200).json({
+    status: "success",
     data: leaderBoardsData,
   });
 };

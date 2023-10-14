@@ -35,6 +35,9 @@ const User = sequelize.define("user", {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  totalamount: {
+    type: DataTypes.INTEGER,
+  },
 });
 
 User.addHook("beforeSave", "hashpassword", async function (user, option) {
