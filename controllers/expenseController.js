@@ -4,16 +4,40 @@ const sequelize = require("../utils/database");
 const User = require("../models/user");
 exports.fetchExpenses = async (req, res, next) => {
   try {
-    const expenses = await req.user.getExpenses();
+    const count = await req.user.countExpenses();
+    let { page, limit } = req.query;
+    limit = limit * 1;
+    page = page * 1;
+    console.log(count, "cccccccccccccccccccc", req.query, "query");
+    const offset = page ? (page - 1) * limit : 1;
+    const expenses = await Expense.findAll(
+      {
+        offset: offset,
+        limit: limit,
+      },
+      { where: { userId: req.user.id } }
+    );
+    console.log(
+      offset,
+      limit,
+      page,
+      limit,
+      req.query,
+      "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+    );
+    const totalPages = Math.ceil(count / limit);
+    console.log(expenses);
     res.status(200).json({
       status: "success",
       data: expenses,
+      totalPages,
     });
     return;
   } catch (error) {
     console.log(error);
   }
 };
+
 exports.createExpense = async (req, res, next) => {
   const t = await sequelize.transaction();
   try {
@@ -21,8 +45,6 @@ exports.createExpense = async (req, res, next) => {
     const id = req.user.dataValues.id;
     const { amount, description, category } = req.body;
     const totalamount = amount * 1 + prvTotalAmount;
-    console.log(totalamount);
-
     const expense = await req.user.createExpense(
       {
         amount,
@@ -31,7 +53,6 @@ exports.createExpense = async (req, res, next) => {
       },
       { transaction: t }
     );
-    console.log(expense);
     req.user.totalamount = totalamount;
     await req.user.save({ transaction: t });
     t.commit();
